@@ -149,14 +149,99 @@ exports.getAllReservations = getAllReservations;
  * @param {*} limit The number of results to return.
  * @return {Promise<[{}]>}  A promise to the properties.
  */
-const getAllProperties = function(options, limit = 10) {
-  const limitedProperties = {};
-  for (let i = 1; i <= limit; i++) {
-    limitedProperties[i] = properties[i];
-  }
-  return Promise.resolve(limitedProperties);
-}
+
+//  const testOptions = {
+//   city: 'Vancouver'
+// }
+// New
+const getAllProperties = function (options, limit = 10) {
+  // 1
+  const queryParams = [];
+  // 2
+  let queryString = `
+  SELECT properties.*, avg(property_reviews.rating) as average_rating
+  FROM properties
+  JOIN property_reviews ON properties.id = property_id
+  `;
+
+  // Keep track for AND
+  let needAnd = false;
+  // 3
+  if (options.city) {
+    let prefix = 'WHERE';
+    let and = 'AND';
+    if (needAnd) {
+      prefix = and;
+    }
+    queryParams.push(`%${options.city}%`);
+    queryString += `${prefix} city LIKE $${queryParams.length} `;
+    needAnd = true;
+  };
+
+  if (options.owner_id) {
+    console.log("options.owner_id", options.owner_id);
+    let prefix = 'WHERE';
+    let and = 'AND';
+    if (needAnd) {
+      prefix = and;
+    }
+    queryParams.push(options.owner_id);
+    queryString += `${prefix} properties.owner_id = $${queryParams.length} `;
+    needAnd = true;
+  };
+
+  if (options.minimum_price_per_night && options.maximum_price_per_night) {
+    const minimumCents = options.minimum_price_per_night * 100;
+    const maximumCents = options.maximum_price_per_night * 100;
+    let prefix = 'WHERE';
+    let and = 'AND';
+    if (needAnd) {
+      prefix = and;
+    }
+    queryParams.push(minimumCents);
+    queryString += `${prefix} cost_per_night > $${queryParams.length} `;
+    queryParams.push(maximumCents);
+    queryString += `AND cost_per_night < $${queryParams.length} `;
+    needAnd = true;
+  };
+
+  if (options.minimum_rating) {
+    let prefix = 'WHERE';
+    let and = 'AND';
+    if (needAnd) {
+      prefix = and;
+    }
+    queryParams.push(options.minimum_rating);
+    queryString += `${prefix} rating > $${queryParams.length} `;
+    needAnd = true;
+  };
+  
+  // 4
+  queryParams.push(limit);
+  queryString += `
+  GROUP BY properties.id
+  ORDER BY cost_per_night
+  LIMIT $${queryParams.length};
+  `;
+
+  // 5
+  console.log(queryString, queryParams);
+
+  // 6
+  return pool.query(queryString, queryParams).then((res) => res.rows);
+};
 exports.getAllProperties = getAllProperties;
+
+
+
+// Original
+// const getAllProperties = function(options, limit = 10) {
+//   const limitedProperties = {};
+//   for (let i = 1; i <= limit; i++) {
+//     limitedProperties[i] = properties[i];
+//   }
+//   return Promise.resolve(limitedProperties);
+// }
 
 // getAllProperties(null, 2).then(res=>(console.log(res)));
 

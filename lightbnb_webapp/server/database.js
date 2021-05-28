@@ -250,10 +250,75 @@ exports.getAllProperties = getAllProperties;
  * @param {{}} property An object containing all of the property details.
  * @return {Promise<{}>} A promise to the property.
  */
+// Property
+const testData = {
+  owner_id: 2,
+  title: 'Test Property',
+  description: 'Test description',
+  thumbnail_photo_url: 'thumbnail',
+  cover_photo_url: 'coverphoto',
+  cost_per_night: '1000',
+  street: 'test street',
+  city: 'test city',
+  province: 'BC',
+  post_code: 'test_postal',
+  country: 'test_country',
+  parking_spaces: 4,
+  number_of_bathrooms: 5,
+  number_of_bedrooms: 6
+};
+
 const addProperty = function(property) {
-  const propertyId = Object.keys(properties).length + 1;
-  property.id = propertyId;
-  properties[propertyId] = property;
-  return Promise.resolve(property);
-}
+  const priceInCents = property.cost_per_night * 100;
+  const query = pool.query(
+    `INSERT INTO properties (
+      owner_id,
+      title, 
+      description, 
+      thumbnail_photo_url, 
+      cover_photo_url, 
+      cost_per_night, 
+      street, 
+      city, 
+      province, 
+      post_code, 
+      country,
+      parking_spaces,
+      number_of_bathrooms,
+      number_of_bedrooms)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+      RETURNING *;`, 
+          [
+            property.owner_id, 
+            property.title,
+            property.description,
+            property.thumbnail_photo_url,
+            property.cover_photo_url,
+            priceInCents,
+            property.street,
+            property.city,
+            property.province,
+            property.post_code,
+            property.country,
+            property.parking_spaces,
+            property.number_of_bathrooms,
+            property.number_of_bedrooms
+          ])
+    .then(res=>{
+      return res.rows[0];
+    })
+    .catch(err=>{console.log(err)});
+    return query;
+};
 exports.addProperty = addProperty;
+
+// Test
+// addProperty1(testData).then(res=>{console.log(res)});
+
+// Original
+// const addProperty = function(property) {
+//   const propertyId = Object.keys(properties).length + 1;
+//   property.id = propertyId;
+//   properties[propertyId] = property;
+//   return Promise.resolve(property);
+// }

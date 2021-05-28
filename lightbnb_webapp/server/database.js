@@ -77,11 +77,6 @@ exports.getUserWithId = getUserWithId;
  * @return {Promise<{}>} A promise to the user.
  */
 
-const testUser = {
-  name: 'Tim',
-  email: 'tim@gmail.com',
-  password: 'password'
-}
 // New
 const addUser = function(user) {
   const query = pool.query(
@@ -116,10 +111,35 @@ exports.addUser = addUser;
  * @param {string} guest_id The id of the user.
  * @return {Promise<[{}]>} A promise to the reservations.
  */
+// New
 const getAllReservations = function(guest_id, limit = 10) {
-  return getAllProperties(null, 2);
-}
+  const query = pool.query(
+    `SELECT properties.*
+    FROM reservations
+    JOIN properties ON property_id = properties.id
+    WHERE guest_id = $1
+    LIMIT $2;`, [guest_id, limit])
+    .then(res=>{
+      const resultObject = {};
+      const properties = res.rows
+      for (const property of properties) {
+        const id = property.id;
+        resultObject[id] = property;
+      }
+      return resultObject;
+    })
+    .catch(err=>{console.log(err)});
+    return query;
+};
 exports.getAllReservations = getAllReservations;
+
+// getAllReservations1('100').then(res=>{console.log("function call:", res)})
+
+// Original
+// const getAllReservations = function(guest_id, limit = 10) {
+//   return getAllProperties(null, 2);
+// }
+
 
 /// Properties
 
@@ -138,6 +158,7 @@ const getAllProperties = function(options, limit = 10) {
 }
 exports.getAllProperties = getAllProperties;
 
+// getAllProperties(null, 2).then(res=>(console.log(res)));
 
 /**
  * Add a property to the database
